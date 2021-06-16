@@ -1,0 +1,1 @@
+docker run -p 8080:8080  -v /home/rp/projects/tech/nginx/nginx/nginx.conf:/etc/nginx/nginx.conf:ro nginx
