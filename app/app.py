@@ -14,9 +14,15 @@ app = FastAPI()
 server = 2
 
 
+import time
+
 @app.post("/student")
 async def create_item(student: Student):
+
     print(f"{server}: {student.json()}")
+    print("start sleep")
+    time.sleep(5)
+    print("stop sleep")
     return student
 
 
