@@ -1,0 +1,125 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rp-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: api
+      service: rp-app
+  template:
+    metadata:
+      labels:
+        type: api
+        service: rp-app
+        language: python
+    spec:
+      containers:
+      - name: api
+        image: git.betlab.com:4567/fairplay/fairplay/main/rp-app
+      imagePullSecrets:
+      - name: registry-fairplay
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rp-app
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+  selector:
+    type: api
+    service: rp-app
+
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rp-app-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: api
+      service: rp-app-2
+  template:
+    metadata:
+      labels:
+        type: api
+        service: rp-app-2
+        language: python
+    spec:
+      containers:
+      - name: api
+        image: git.betlab.com:4567/fairplay/fairplay/main/rp-app
+      imagePullSecrets:
+      - name: registry-fairplay
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rp-app-2
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+  selector:
+    type: api
+    service: rp-app-2
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: rp-app-2
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: rp2.fairplay.dev.pmcorp.loc
+    http:
+      paths:
+      -  backend:
+          serviceName: rp-app-2
+          servicePort: 8000
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: rp-app
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location = /mirror {
+        internal;
+        proxy_set_header Host rp2.fairplay.dev.pmcorp.loc;
+        proxy_pass http://rp2.fairplay.dev.pmcorp.loc$request_uri;
+      }
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      mirror /mirror;
+spec:
+  rules:
+  - host: rp.fairplay.dev.pmcorp.loc
+    http:
+      paths:
+      -  backend:
+          serviceName: rp-app
+          servicePort: 8000
+      
